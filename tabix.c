@@ -230,7 +230,7 @@ static int query_chroms(char *fname)
 {
     const char **seq;
     int i, nseq, ftype = file_type(fname);
-    if ( ftype & IS_TXT || !ftype )
+    if ( (ftype & IS_TXT) || !ftype )
     {
         tbx_t *tbx = tbx_index_load(fname);
         if ( !tbx ) error("Could not load .tbi index of %s\n", fname);
@@ -263,7 +263,7 @@ static int query_chroms(char *fname)
 
 int reheader_file(const char *fname, const char *header, int ftype, tbx_conf_t *conf)
 {
-    if ( ftype & IS_TXT || !ftype )
+    if ( (ftype & IS_TXT) || !ftype )
     {
         BGZF *fp = bgzf_open(fname,"r");
         if ( !fp || bgzf_read_block(fp) != 0 || !fp->block_length ) return -1;
@@ -359,6 +359,7 @@ static int usage(void)
     fprintf(stderr, "   -l, --list-chroms          list chromosome names\n");
     fprintf(stderr, "   -r, --reheader FILE        replace the header with the content of FILE\n");
     fprintf(stderr, "   -R, --regions FILE         restrict to regions listed in the file\n");
+    fprintf(stderr, "   -Q, --qregions FILE        like -R, but also print query region info\n");
     fprintf(stderr, "   -T, --targets FILE         similar to -R but streams rather than index-jumps\n");
     fprintf(stderr, "\n");
     return 1;
@@ -376,6 +377,7 @@ int main(int argc, char *argv[])
     {
         {"help", no_argument, NULL, 'h'},
         {"regions", required_argument, NULL, 'R'},
+        {"qregions", required_argument, NULL, 'Q'},
         {"targets", required_argument, NULL, 'T'},
         {"csi", no_argument, NULL, 'C'},
         {"zero-based", no_argument, NULL, '0'},
