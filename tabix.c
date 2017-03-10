@@ -211,7 +211,7 @@ static int query_regions(args_t *args, char *fname, char **regs, int nregs)
                 {
                     if ( reg_idx && !regidx_overlap(reg_idx,seq[itr->curr_tid],itr->curr_beg,itr->curr_end, NULL) ) continue;
                     if (args->qinfo && qinfoshown==0) {
-                       printf("#Qry|%s\n",regs[i]);
+                       printf("##Qry|%s\n",regs[i]);
                        qinfoshown=1;
                     }
                     puts(str.s);
