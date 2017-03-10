@@ -31,12 +31,13 @@ htslib_default_libs = -lz -lm
 
 CPPFLAGS =
 # TODO: probably update cram code to make it compile cleanly with -Wc++-compat
-CFLAGS   = -g -Wall -O2
+#CFLAGS   = -g -Wall -O2
+CFLAGS   = -g -Wall
 EXTRA_CFLAGS_PIC = -fpic
 LDFLAGS  =
 LIBS     = $(htslib_default_libs)
 
-prefix      = /ccb/sw
+prefix      = /usr/local
 exec_prefix = $(prefix)
 bindir      = $(exec_prefix)/bin
 includedir  = $(prefix)/include

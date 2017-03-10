@@ -44,7 +44,7 @@ DEALINGS IN THE SOFTWARE.  */
 typedef struct
 {
     char *regions_fname, *targets_fname;
-    int print_header, header_only;
+    int print_header, header_only, qinfo;
 }
 args_t;
 
@@ -139,6 +139,7 @@ static char **parse_regions(char *regions_fname, char **argv, int argc, int *nre
     for (iseq=0; iseq<argc; iseq++) regs[ireg++] = strdup(argv[iseq]);
     return regs;
 }
+
 static int query_regions(args_t *args, char *fname, char **regs, int nregs)
 {
     int i;
@@ -203,10 +204,16 @@ static int query_regions(args_t *args, char *fname, char **regs, int nregs)
             for (i=0; i<nregs; i++)
             {
                 hts_itr_t *itr = tbx_itr_querys(tbx, regs[i]);
+                int qinfoshown = 0;
                 if ( !itr ) continue;
+
                 while (tbx_itr_next(fp, tbx, itr, &str) >= 0)
                 {
                     if ( reg_idx && !regidx_overlap(reg_idx,seq[itr->curr_tid],itr->curr_beg,itr->curr_end, NULL) ) continue;
+                    if (args->qinfo && qinfoshown==0) {
+                       printf("#Qry|%s\n",regs[i]);
+                       qinfoshown=1;
+                    }
                     puts(str.s);
                 }
                 tbx_itr_destroy(itr);
@@ -359,7 +366,7 @@ static int usage(void)
     fprintf(stderr, "   -l, --list-chroms          list chromosome names\n");
     fprintf(stderr, "   -r, --reheader FILE        replace the header with the content of FILE\n");
     fprintf(stderr, "   -R, --regions FILE         restrict to regions listed in the file\n");
-    fprintf(stderr, "   -Q, --qregions FILE        like -R, but also print query region info\n");
+    fprintf(stderr, "   -Q, --qinfo                for -R, print each query region before result\n");
     fprintf(stderr, "   -T, --targets FILE         similar to -R but streams rather than index-jumps\n");
     fprintf(stderr, "\n");
     return 1;
@@ -377,7 +384,7 @@ int main(int argc, char *argv[])
     {
         {"help", no_argument, NULL, 'h'},
         {"regions", required_argument, NULL, 'R'},
-        {"qregions", required_argument, NULL, 'Q'},
+        {"qinfo", no_argument, NULL, 'Q'},
         {"targets", required_argument, NULL, 'T'},
         {"csi", no_argument, NULL, 'C'},
         {"zero-based", no_argument, NULL, '0'},
@@ -397,11 +404,12 @@ int main(int argc, char *argv[])
     };
 
     char *tmp;
-    while ((c = getopt_long(argc, argv, "hH?0b:c:e:fm:p:s:S:lr:CR:T:", loptions,NULL)) >= 0)
+    while ((c = getopt_long(argc, argv, "hH?0b:c:e:fm:p:s:S:lr:CQR:T:", loptions,NULL)) >= 0)
     {
         switch (c)
         {
             case 'R': args.regions_fname = optarg; break;
+            case 'Q': args.qinfo = 1; break;
             case 'T': args.targets_fname = optarg; break;
             case 'C': do_csi = 1; break;
             case 'r': reheader = optarg; break;
