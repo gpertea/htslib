@@ -382,7 +382,7 @@ int main(int argc, char *argv[])
 
     static const struct option loptions[] =
     {
-        {"help", no_argument, NULL, 'h'},
+        {"help", no_argument, NULL, 2},
         {"regions", required_argument, NULL, 'R'},
         {"qinfo", no_argument, NULL, 'Q'},
         {"targets", required_argument, NULL, 'T'},
