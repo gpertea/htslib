@@ -75,7 +75,7 @@ AC_SYS_LARGEFILE
 AC_ARG_ENABLE([libcurl],
   [AS_HELP_STRING([--enable-libcurl],
                   [enable libcurl-based support for http/https/etc URLs])],
-  [], [enable_libcurl=no])
+  [], [enable_libcurl=check])
 
 AC_ARG_ENABLE([lzma],
   [AS_HELP_STRING([--disable-lzma],
@@ -182,6 +182,11 @@ is installed.
 FAILED.  This error must be resolved in order to build HTSlib successfully.])
 fi
 
+dnl connect() etc. fns are in libc on linux, but libsocket on illumos/Solaris
+libsocket=unneeded
+AC_SEARCH_LIBS(connect, socket, [libsocket=needed], [])
+
+
 if test "$enable_bz2" != no; then
   bz2_devel=ok
   AC_CHECK_HEADER([bzlib.h], [], [bz2_devel=missing], [;])
@@ -284,9 +289,8 @@ AC_SUBST([gcs])
 s3=disabled
 if test "$enable_s3" != no; then
   if test $libcurl = enabled; then
-    AC_DEFINE([ENABLE_S3], 1, [Define if HTSlib should enable S3 support.])
     s3=enabled
-    need_crypto=yes
+    need_crypto="$enable_s3"
   else
     case "$enable_s3" in
       check) AC_MSG_WARN([S3 support not enabled: requires libcurl support]) ;;
@@ -298,7 +302,6 @@ in HTSlib.  Configure with --enable-libcurl in order to use S3 URLs.])
     esac
   fi
 fi
-AC_SUBST([s3])
 
 CRYPTO_LIBS=
 if test $need_crypto != no; then
@@ -311,7 +314,10 @@ if test $need_crypto != no; then
         case "$ac_cv_search_HMAC" in
           -l*) CRYPTO_LIBS=$ac_cv_search_HMAC ;;
         esac],
-     [AC_MSG_ERROR([SSL development files not found
+     [case "$need_crypto" in
+     check) AC_MSG_WARN([S3 support not enabled: requires SSL development files])
+         s3=disabled ;;
+     *) AC_MSG_ERROR([SSL development files not found
 
 Support for AWS S3 URLs requires routines from an SSL library.  Building
 HTSlib with libcurl enabled requires SSL development files to be installed
@@ -320,13 +326,23 @@ libnss3-dev, or libssl-dev (on Debian or Ubuntu Linux, corresponding to the
 libcurl4-*-dev package installed), or openssl-devel (on RPM-based Linux
 distributions or Cygwin) is installed.
 
-Either configure with --disable-libcurl or resolve this error to build HTSlib.])])
+Either configure with --disable-s3 or resolve this error to build HTSlib.]) ;;
+       esac])
      LIBS=$save_LIBS])
 dnl Only need to add to static_LIBS if not building as a plugin
   if test "$enable_plugins" != yes ; then
      static_LIBS="$static_LIBS $CRYPTO_LIBS"
   fi
 fi
+
+dnl Look for PTHREAD_MUTEX_RECURSIVE.
+dnl This is normally in pthread.h except on some broken glibc implementations.
+AC_CHECK_DECL(PTHREAD_MUTEX_RECURSIVE, [], [AC_DEFINE([_XOPEN_SOURCE],[600], [Needed for PTHREAD_MUTEX_RECURSIVE])], [[#include <pthread.h>]])
+
+if test "$s3" = enabled ; then
+   AC_DEFINE([ENABLE_S3], 1, [Define if HTSlib should enable S3 support.])
+fi
+AC_SUBST([s3])
 AC_SUBST([CRYPTO_LIBS])
 
 AC_SUBST([pc_requires])
