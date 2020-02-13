@@ -22,10 +22,8 @@ and `.csi` formats, and the bgzip compression utility.
 
 ### Building HTSlib
 
-See [INSTALL](INSTALL) for complete details.
-[Release tarballs][download] contain generated files that have not been
-committed to this repository, so building the code from a Git repository
-requires extra steps:
+See [INSTALL](INSTALL) for complete details. Release tarballs may contain generated files that have not been
+committed to this repository, so building the code from a Git repository requires extra steps:
 
 ```sh
 autoheader     # If using configure, generate the header template...
@@ -34,5 +32,11 @@ autoconf       # ...and configure script (or use autoreconf to do both)
 make
 make install
 ```
+For example, if linking with `libdeflate` is desired (to speed up zlib compression/decompression), and 
+the installation prefix should be `/ccb/sw/` (which could also be the prefix of libdeflate installation in this exmple), the following configure command can be used:
 
-[download]: http://www.htslib.org/download/
+```sh
+CPPFLAGS=-I/ccb/sw/include LDFLAGS=-L/ccb/sw/lib \
+./configure --prefix=/ccb/sw --with-libdeflate
+```
+
