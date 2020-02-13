@@ -1,9 +1,27 @@
 #!/usr/bin/env perl
+# test-bcf-sr.pl -- Test bcf synced reader's allele pairing
 #
-# Author: petr.danecek@sanger
+#     Copyright (C) 2017-2018 Genome Research Ltd.
 #
-# Test bcf synced reader's allele pairing
+#     Author: petr.danecek@sanger
 #
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+# THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+# DEALINGS IN THE SOFTWARE.
 
 use strict;
 use warnings;
@@ -25,7 +43,7 @@ sub error
 {
     my (@msg) = @_;
     if ( scalar @msg ) { confess @msg; }
-    print 
+    print
         "Usage: test-bcf-sr.pl [OPTIONS]\n",
         "Options:\n",
         "   -s, --seed <int>        Random seed\n",
@@ -185,8 +203,8 @@ sub check_outputs
     {
         if ( $blines[$i] ne $plines[$i] )
         {
-            #error("Different lines in $fname_bin vs $fname_perl:\n\t$blines[$i].\nvs\n\t$plines[$i].\n"); 
-            error("Different lines in $fname_bin vs $fname_perl:\n\t".join("\n\t",@blines)."\nvs\n\t".join("\n\t",@plines)."\n"); 
+            #error("Different lines in $fname_bin vs $fname_perl:\n\t$blines[$i].\nvs\n\t$plines[$i].\n");
+            error("Different lines in $fname_bin vs $fname_perl:\n\t".join("\n\t",@blines)."\nvs\n\t".join("\n\t",@plines)."\n");
         }
     }
 }
@@ -212,7 +230,7 @@ sub run_test
                 my $alt2 = random_alt($ref,$snp);
                 if ( $alt2 ne '.' && $alt ne $alt2 )
                 {
-                    $var .= ",$ref>$alt2"; 
+                    $var .= ",$ref>$alt2";
                 }
             }
             $vars{$var} = 1;
@@ -292,7 +310,7 @@ sub pair_lines
     #     my $igrp = $vars[$i][0]{igrp};
     #     my $jvar = $vars[$i][0]{ivar};
     #     my $var  = $$groups[$igrp]{vars}[$jvar];
-    #     print STDERR "$i: $var\n"; 
+    #     print STDERR "$i: $var\n";
     # }
 
     # initialize variant sets - combinations of compatible variants across multiple reader groups
@@ -476,14 +494,14 @@ sub pairing_score
     my ($opts,$grps,$vars,$avset,$bvset) = @_;
 
     my $score = {};
-    if ( $$opts{logic}=~/both/ or $$opts{logic}=~/snps/ or $$opts{logic}=~/all/ ) 
-    { 
+    if ( $$opts{logic}=~/both/ or $$opts{logic}=~/snps/ or $$opts{logic}=~/all/ )
+    {
         $$score{snp}{snp} = 3;
         if ( $$opts{logic}=~/ref/ or $$opts{logic}=~/all/ ) { $$score{snp}{ref} = 2; }
     }
-    if ( $$opts{logic}=~/both/ or $$opts{logic}=~/indels/ or $$opts{logic}=~/all/ ) 
+    if ( $$opts{logic}=~/both/ or $$opts{logic}=~/indels/ or $$opts{logic}=~/all/ )
     {
-        $$score{indel}{indel} = 3; 
+        $$score{indel}{indel} = 3;
         if ( $$opts{logic}=~/ref/ or $$opts{logic}=~/all/ ) { $$score{indel}{ref} = 2; }
     }
     if ( $$opts{logic}=~/all/ )
