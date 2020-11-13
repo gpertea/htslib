@@ -12,11 +12,11 @@
 autom4te.cache
 config.cache
 config.h
-config.h.in
+config.h.in-should-not
 config.log
 config.mk
 config.status
-configure-should-it
+configure-should-not
 
 hfile_*.bundle
 hfile_*.cygdll
