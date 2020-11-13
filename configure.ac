@@ -76,8 +76,8 @@ m4_ifdef([PKG_PROG_PKG_CONFIG], [PKG_PROG_PKG_CONFIG], [PKG_CONFIG=""])
 
 need_crypto=no
 pc_requires=
-static_LDFLAGS=$LDFLAGS
-static_LIBS='-lpthread -lz -lm'
+static_LDFLAGS=$LDFLAGS -L./libdeflate
+static_LIBS='-lpthread -ldeflate -lz -lm'
 private_LIBS=$LDFLAGS
 
 AC_ARG_ENABLE([bz2],
@@ -107,11 +107,6 @@ AC_ARG_ENABLE([plugins],
                   [enable separately-compiled plugins for file access])],
   [], [enable_plugins=no])
 AC_SUBST(enable_plugins)
-
-AC_ARG_WITH([libdeflate],
-  [AS_HELP_STRING([--with-libdeflate],
-                  [use libdeflate for faster crc and deflate algorithms])],
-  [], [with_libdeflate=check])
 
 AC_ARG_WITH([plugin-dir],
   [AS_HELP_STRING([--with-plugin-dir=DIR],
@@ -279,27 +274,6 @@ produced elsewhere unreadable) or resolve this error to build HTSlib.])
   pc_requires="$pc_requires liblzma"
   static_LIBS="$static_LIBS -llzma"
 fi
-
-AS_IF([test "x$with_libdeflate" != "xno"],
-  [libdeflate=ok
-   AC_CHECK_HEADER([libdeflate.h],[],[libdeflate='missing header'],[;])
-   AC_CHECK_LIB([deflate], [libdeflate_deflate_compress],[:],[libdeflate='missing library'])
-   AS_IF([test "$libdeflate" = "ok"],
-    [AC_DEFINE([HAVE_LIBDEFLATE], 1, [Define if libdeflate is available.])
-     LIBS="-ldeflate $LIBS"
-     private_LIBS="$private_LIBS -ldeflate"
-     static_LIBS="$static_LIBS -ldeflate"],
-    [AS_IF([test "x$with_libdeflate" != "xcheck"],
-       [MSG_ERROR([libdeflate development files not found: $libdeflate
-
-You requested libdeflate, but do not have the required header / library
-files.  The source for libdeflate is available from
-<https://github.com/ebiggers/libdeflate>.  You may have to adjust
-search paths in CPPFLAGS and/or LDFLAGS if the header and library
-are not currently on them.
-
-Either configure with --without-libdeflate or resolve this error to build
-HTSlib.])])])])
 
 libcurl=disabled
 if test "$enable_libcurl" != no; then
