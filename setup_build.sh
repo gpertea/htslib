@@ -29,4 +29,4 @@ make install
 cd ..
 
 ## now build static library for linking with stringtie, htsqc etc.
-make lib-static
+make -j 4 lib-static

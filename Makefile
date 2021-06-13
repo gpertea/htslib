@@ -450,13 +450,10 @@ htscodecs/htscodecs:
 
 # Build the htscodecs/htscodecs/version.h file if necessary
 htscodecs/htscodecs/version.h: force
-	@if test -e htscodecs/.git && test -e htscodecs/configure.ac ; then \
+	@if test -e htscodecs/configure.ac ; then \
 	  cd htscodecs && \
-	  vers=`git describe --always --dirty --match 'v[0-9]\.[0-9]*'` && \
-	  case "$$vers" in \
-	    v*) vers=$${vers#v} ;; \
-	    *) iv=`awk '/^AC_INIT/ { match($$0, /^AC_INIT\(htscodecs, *([0-9](\.[0-9])*)\)/, m); print substr($$0, m[1, "start"], m[1, "length"]) }' configure.ac` ; vers="$$iv$${vers:+-g$$vers}" ;; \
-	  esac ; \
+	  iv=`awk '/^AC_INIT/ { match($$0, /^AC_INIT\(htscodecs, *([0-9](\.[0-9])*)\)/, m); print substr($$0, m[1, "start"], m[1, "length"]) }' configure.ac` \
+	  vers="$$iv$${vers:+-g$$vers}" \
 	  if ! grep -s -q '"'"$$vers"'"' htscodecs/version.h ; then \
 	    echo 'Updating $@ : #define HTSCODECS_VERSION_TEXT "'"$$vers"'"' ; \
 	    echo '#define HTSCODECS_VERSION_TEXT "'"$$vers"'"' > htscodecs/version.h ; \
