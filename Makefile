@@ -27,17 +27,18 @@ AR     = ar
 RANLIB = ranlib
 
 # Default libraries to link if configure is not used
-htslib_default_libs = -lz -lm -lbz2 -llzma -lcurl
+htslib_default_libs = -lz -lm -lbz2 -ldeflate -llzma 
 
-CPPFLAGS =
+CPPFLAGS = -I./xlibs/include
 # TODO: make the 64-bit support for VCF optional via configure, for now add -DVCF_ALLOW_INT64
 #       to CFLAGS manually, here or in config.mk if the latter exists.
 # TODO: probably update cram code to make it compile cleanly with -Wc++-compat
 # For testing strict C99 support add -std=c99 -D_XOPEN_SOURCE=600
 #CFLAGS   = -g -Wall -O2 -pedantic -std=c99 -D_XOPEN_SOURCE=600
-CFLAGS   = -g -Wall -O2 -fvisibility=hidden
+CFLAGS   = -g -Wall -O2 -fvisibility=hidden -D HAVE_LIBDEFLATE -D HAVE_LIBLZMA
+
 EXTRA_CFLAGS_PIC = -fpic
-LDFLAGS  = -fvisibility=hidden
+LDFLAGS  = -fvisibility=hidden -L./xlibs/lib
 LIBS     = $(htslib_default_libs)
 
 prefix      = /usr/local
@@ -115,7 +116,7 @@ htscodecs.mk:
 
 HTSPREFIX =
 include htslib_vars.mk
-include htscodecs.mk
+#include htscodecs.mk
 
 # If not using GNU make, you need to copy the version number from version.sh
 # into here.
@@ -248,7 +249,7 @@ config.h:
 	echo '#define HAVE_LZMA_H 1' >> $@
 	echo '#endif' >> $@
 	echo '#define HAVE_DRAND48 1' >> $@
-	echo '#define HAVE_LIBCURL 1' >> $@
+	echo '#define HAVE_LIBDEFLATE 1' >> $@
 
 # And similarly for htslib.pc.tmp ("pkg-config template").  No dependency
 # on htslib.pc.in listed, as if that file is newer the usual way to regenerate
