@@ -10,8 +10,14 @@ mkdir -p $libdir
 # -- prepare libdeflate
 git clone https://github.com/ebiggers/libdeflate
 cd libdeflate
-make -j 2 libdeflate.a
-cp libdeflate.a $libdir/
+MINGW=''
+libdeflate=libdeflate.a
+if [[ $(gcc -dumpmachine) == *mingw* ]]; then
+ MINGW=1
+ libdeflate=libdeflatestatic.lib
+fi
+make -j 2 $libdeflate || exit 1
+cp $libdeflate $libdir/libdeflate.a
 cp libdeflate.h $incdir/
 cd ..
 
