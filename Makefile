@@ -116,7 +116,7 @@ htscodecs.mk:
 
 HTSPREFIX =
 include htslib_vars.mk
-#include htscodecs.mk
+include htscodecs.mk
 
 # If not using GNU make, you need to copy the version number from version.sh
 # into here.
@@ -207,7 +207,8 @@ LIBHTS_OBJS = \
 # Without configure we wish to have a rich set of default figures,
 # but we still need conditional inclusion as we wish to still
 # support ./configure --disable-blah.
-NONCONFIGURE_OBJS = hfile_libcurl.o
+#NONCONFIGURE_OBJS = hfile_libcurl.o
+NONCONFIGURE_OBJS = 
 
 PLUGIN_EXT  =
 PLUGIN_OBJS =
@@ -451,9 +452,9 @@ htscodecs/htscodecs:
 # Build the htscodecs/htscodecs/version.h file if necessary
 htscodecs/htscodecs/version.h: force
 	@if test -e htscodecs/configure.ac ; then \
-	  cd htscodecs && \
-	  iv=`awk '/^AC_INIT/ { match($$0, /^AC_INIT\(htscodecs, *([0-9](\.[0-9])*)\)/, m); print substr($$0, m[1, "start"], m[1, "length"]) }' configure.ac` \
-	  vers="$$iv$${vers:+-g$$vers}" \
+	  cd htscodecs ; \
+	  iv=`awk '/^AC_INIT/ { match($$0, /^AC_INIT\(htscodecs, *([0-9](\.[0-9])*)\)/, m); print substr($$0, m[1, "start"], m[1, "length"]) }' configure.ac` ; \
+	  vers="$$iv$${vers:+-g$$vers}" ; \
 	  if ! grep -s -q '"'"$$vers"'"' htscodecs/version.h ; then \
 	    echo 'Updating $@ : #define HTSCODECS_VERSION_TEXT "'"$$vers"'"' ; \
 	    echo '#define HTSCODECS_VERSION_TEXT "'"$$vers"'"' > htscodecs/version.h ; \
