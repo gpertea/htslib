@@ -27,17 +27,18 @@ AR     = ar
 RANLIB = ranlib
 
 # Default libraries to link if configure is not used
-htslib_default_libs = -lz -lm -lbz2 -llzma -lcurl
+htslib_default_libs = -lz -lm -lbz2 -ldeflate -llzma 
 
-CPPFLAGS =
+CPPFLAGS = -I./xlibs/include
 # TODO: make the 64-bit support for VCF optional via configure, for now add -DVCF_ALLOW_INT64
 #       to CFLAGS manually, here or in config.mk if the latter exists.
 # TODO: probably update cram code to make it compile cleanly with -Wc++-compat
 # For testing strict C99 support add -std=c99 -D_XOPEN_SOURCE=600
 #CFLAGS   = -g -Wall -O2 -pedantic -std=c99 -D_XOPEN_SOURCE=600
-CFLAGS   = -g -Wall -O2 -fvisibility=hidden
+CFLAGS   = -g -Wall -O2 -fvisibility=hidden -D HAVE_LIBDEFLATE -D HAVE_LIBLZMA
+
 EXTRA_CFLAGS_PIC = -fpic
-LDFLAGS  = -fvisibility=hidden
+LDFLAGS  = -fvisibility=hidden -L./xlibs/lib
 LIBS     = $(htslib_default_libs)
 
 prefix      = /usr/local
@@ -206,7 +207,8 @@ LIBHTS_OBJS = \
 # Without configure we wish to have a rich set of default figures,
 # but we still need conditional inclusion as we wish to still
 # support ./configure --disable-blah.
-NONCONFIGURE_OBJS = hfile_libcurl.o
+#NONCONFIGURE_OBJS = hfile_libcurl.o
+NONCONFIGURE_OBJS = 
 
 PLUGIN_EXT  =
 PLUGIN_OBJS =
@@ -248,7 +250,7 @@ config.h:
 	echo '#define HAVE_LZMA_H 1' >> $@
 	echo '#endif' >> $@
 	echo '#define HAVE_DRAND48 1' >> $@
-	echo '#define HAVE_LIBCURL 1' >> $@
+	echo '#define HAVE_LIBDEFLATE 1' >> $@
 
 # And similarly for htslib.pc.tmp ("pkg-config template").  No dependency
 # on htslib.pc.in listed, as if that file is newer the usual way to regenerate
@@ -449,13 +451,10 @@ htscodecs/htscodecs:
 
 # Build the htscodecs/htscodecs/version.h file if necessary
 htscodecs/htscodecs/version.h: force
-	@if test -e htscodecs/.git && test -e htscodecs/configure.ac ; then \
-	  cd htscodecs && \
-	  vers=`git describe --always --dirty --match 'v[0-9]\.[0-9]*'` && \
-	  case "$$vers" in \
-	    v*) vers=$${vers#v} ;; \
-	    *) iv=`awk '/^AC_INIT/ { match($$0, /^AC_INIT\(htscodecs, *([0-9](\.[0-9])*)\)/, m); print substr($$0, m[1, "start"], m[1, "length"]) }' configure.ac` ; vers="$$iv$${vers:+-g$$vers}" ;; \
-	  esac ; \
+	@if test -e htscodecs/configure.ac ; then \
+	  cd htscodecs ; \
+	  iv=`awk '/^AC_INIT/ { match($$0, /^AC_INIT\(htscodecs, *([0-9](\.[0-9])*)\)/, m); print substr($$0, m[1, "start"], m[1, "length"]) }' configure.ac` ; \
+	  vers="$$iv$${vers:+-g$$vers}" ; \
 	  if ! grep -s -q '"'"$$vers"'"' htscodecs/version.h ; then \
 	    echo 'Updating $@ : #define HTSCODECS_VERSION_TEXT "'"$$vers"'"' ; \
 	    echo '#define HTSCODECS_VERSION_TEXT "'"$$vers"'"' > htscodecs/version.h ; \
