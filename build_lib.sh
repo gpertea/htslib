@@ -8,6 +8,7 @@ if [[ "$1" == "clean" ]]; then
   /bin/rm -rf lzma
   /bin/rm -rf libdeflate
   /bin/rm -f *.tar.gz
+  exit
 fi
 
 pwd=$(pwd -P)
