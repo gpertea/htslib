@@ -5,8 +5,7 @@ if [[ "$1" == "clean" ]]; then
   make clean
   /bin/rm -f config.h
   /bin/rm -rf xlibs
-  /bin/rm -rf lzma
-  /bin/rm -rf libdeflate
+  /bin/rm -rf lzma bzip2 libdeflate
   /bin/rm -f *.tar.gz
   exit
 fi
@@ -21,6 +20,9 @@ mkdir -p $libdir
 # -- prepare libdeflate
 if [[ ! -d libdeflate ]]; then
  git clone https://github.com/ebiggers/libdeflate
+ cd libdeflate
+ git checkout '9b565afd996d8b798fc7b94cddcc7cfa49293050'
+ cd ..
 fi
 if [[ ! -f $libdir/libdeflate.a ]]; then
   cd libdeflate
@@ -36,8 +38,24 @@ if [[ ! -f $libdir/libdeflate.a ]]; then
   cd ..
 fi
 
+
+bzip="bzip2-1.0.8"
+if [[ ! -d bzip2 ]]; then
+  curl -sLO https://sourceware.org/pub/bzip2/$bzip.tar.gz
+  tar -xzf $bzip.tar.gz
+  /bin/rm -f $bzip.tar.gz
+  mv $bzip bzip2 
+fi
+if [[ ! -f $libdir/libbz2.a ]]; then 
+  cd bzip2 
+  make -j 4 libbz2.a
+  cp bzlib.h $incdir/
+  cp libbz2.a $libdir/
+  cd ..
+fi
+
 # -- prepare liblzma
-xz=xz-5.2.5
+xz="xz-5.2.5"
 
 if [[ ! -d lzma ]]; then
   curl -sLO https://tukaani.org/xz/$xz.tar.gz
