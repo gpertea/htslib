@@ -29,8 +29,8 @@ if [[ ! -f $libdir/libdeflate.a ]]; then
   MINGW=''
   libdeflate=libdeflate.a
   if [[ $(gcc -dumpmachine) == *mingw* ]]; then
-    MINGW=1
-    libdeflate=libdeflatestatic.lib
+   MINGW=1
+   libdeflate=libdeflatestatic.lib
   fi
   make -j 2 $libdeflate || exit 1
   cp $libdeflate $libdir/libdeflate.a
@@ -63,7 +63,7 @@ if [[ ! -d lzma ]]; then
   /bin/rm -f $xz.tar.gz
   mv $xz lzma
 fi
-if [[ ! -f $libdir/liblzma.a ]]; then 
+if [[ ! -f $libdir/liblzma.a ]]; then
   cd lzma
   ./configure --disable-shared -disable-xz -disable-xzdec --disable-lzmadec \
    --disable-lzmainfo --disable-nls --prefix=$prefix
@@ -72,5 +72,4 @@ if [[ ! -f $libdir/liblzma.a ]]; then
   cd ..
 fi
 
-## now build static library for linking with stringtie, htsqc etc.
 make -j 4 lib-static
