@@ -270,7 +270,8 @@ config.h:
 	echo '#endif' >> $@
 	echo '#define HAVE_DRAND48 1' >> $@
 	echo '#define HAVE_LIBDEFLATE 1' >> $@
-	echo '#define HAVE_LIBCURL 1' >> $@
+	## gpertea: do not link libcurl by default
+	##echo '#define HAVE_LIBCURL 1' >> $@
 	if [ "x$(HTS_CFLAGS_SSE4)" != "x" ] ; then \
 	    echo '#define HAVE_POPCNT 1' >> $@ ; \
 	    echo '#define HAVE_SSE4_1 1' >> $@ ; \
@@ -536,9 +537,9 @@ htscodecs/htscodecs:
 	@false
 
 # Build the htscodecs/htscodecs/version.h file if necessary
+## gpertea: include htscodecs directly, not as submodule - so no htscodecs/.git 
+##   @if test -e $(srcdir)/htscodecs/.git && test -e $(srcdir)/htscodecs/configure.ac ; then
 htscodecs/htscodecs/version.h: force
-	## @if test -e $(srcdir)/htscodecs/.git && test -e $(srcdir)/htscodecs/configure.ac ; then \
-	## gpertea: include htscodecs directly, not as submodule - so no htscodecs/.git 
 	@if test -e $(srcdir)/htscodecs/configure.ac ; then \
 	  vers=`cd $(srcdir)/htscodecs && git describe --always --dirty --match 'v[0-9]\.[0-9]*'` && \
 	  case "$$vers" in \
@@ -868,7 +869,7 @@ mostlyclean: testclean
 	-rm -f htscodecs/tests/*.o
 
 clean: mostlyclean clean-$(SHLIB_FLAVOUR)
-	-rm -f libhts.a $(BUILT_PROGRAMS) $(BUILT_PLUGINS) $(BUILT_TEST_PROGRAMS) $(BUILT_THRASH_PROGRAMS)
+	-rm -f libhts.a config.h $(BUILT_PROGRAMS) $(BUILT_PLUGINS) $(BUILT_TEST_PROGRAMS) $(BUILT_THRASH_PROGRAMS)
 	-rm -f htscodecs/tests/rans4x8 htscodecs/tests/rans4x16pr htscodecs/tests/arith_dynamic htscodecs/tests/tokenise_name3 htscodecs/tests/fqzcomp_qual htscodecs/tests/varint
 
 distclean maintainer-clean: clean
