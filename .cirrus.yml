@@ -48,7 +48,7 @@ test_template: &TEST
   test_script: |
     make test-shlib-exports
     make test
-
+    if test "x$DO_UNTRACKED_FILE_CHECK" = "xyes"; then make check-untracked ; fi
 
 #--------------------------------------------------
 # Task: linux builds.
@@ -68,10 +68,11 @@ gcc_task:
   matrix:
     - environment:
        DO_MAINTAINER_CHECKS: yes
+       DO_UNTRACKED_FILE_CHECK: yes
        USE_CONFIG: no
     - environment:
        USE_CONFIG: yes
-       CFLAGS: -std=c99 -pedantic
+       CFLAGS: -std=c99 -pedantic -Wformat=2
        USE_LIBDEFLATE: yes
 
   << : *LIBDEFLATE
@@ -83,8 +84,8 @@ gcc_task:
 ubuntu_task:
   name: ubuntu-clang
   container:
-    #image: ubuntu:latest   # use << : *LIBDEFLATE
-    image: ubuntu:devel
+    image: ubuntu:latest
+    # image: ubuntu:devel
     cpu: 2
     memory: 1G
 
@@ -96,6 +97,7 @@ ubuntu_task:
   matrix:
     - environment:
        USE_CONFIG: yes
+       DO_UNTRACKED_FILE_CHECK: yes
     - environment:
        USE_CONFIG: yes
        CFLAGS: -g -Wall -O3 -fsanitize=address
@@ -115,11 +117,11 @@ ubuntu_task:
   << : *TEST
 
 
-# CentOS
-centos_task:
-  name: centos-gcc
+# Rocky Linux
+rocky_task:
+  name: rockylinux-gcc
   container:
-    image: centos:latest
+    image: rockylinux:9
     cpu: 2
     memory: 1G
 
@@ -131,9 +133,36 @@ centos_task:
   # NB: we could consider building a docker image with these
   # preinstalled and specifying that instead, to speed up testing.
   install_script: |
-    yum install -y autoconf automake make gcc perl-Data-Dumper zlib-devel \
-        bzip2 bzip2-devel xz-devel curl-devel openssl-devel ncurses-devel \
-        diffutils git
+    yum install -y autoconf automake make gcc perl-Data-Dumper perl-FindBin \
+        zlib-devel bzip2 bzip2-devel xz-devel curl-devel openssl-devel \
+        ncurses-devel diffutils git
+
+  << : *COMPILE
+  << : *TEST
+
+# Arm Linux
+arm_ubuntu_task:
+  name: ubuntu-arm
+  arm_container:
+    image: ubuntu:latest
+    cpu: 2
+    memory: 1G
+
+  environment:
+    LC_ALL: C
+    CIRRUS_CLONE_DEPTH: 1
+    DO_UNTRACKED_FILE_CHECK: yes
+    USE_CONFIG: yes
+    CFLAGS: -g -Wall -O3 -std=c99 -pedantic
+
+  # NB: we could consider building a docker image with these
+  # preinstalled and specifying that instead, to speed up testing.
+  install_script: |
+    apt-get update
+    apt-get install -y --no-install-suggests --no-install-recommends     \
+        ca-certificates clang libc-dev make git autoconf automake        \
+        zlib1g-dev libbz2-dev liblzma-dev libcurl4-gnutls-dev libssl-dev \
+        libdeflate-dev
 
   << : *COMPILE
   << : *TEST
@@ -144,7 +173,7 @@ centos_task:
 macosx_task:
   name: macosx + clang
   osx_instance:
-    image: catalina-base
+    image: monterey-base
 
   environment:
     CC: clang

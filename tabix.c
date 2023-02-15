@@ -263,7 +263,7 @@ static int query_regions(args_t *args, tbx_conf_t *conf, char *fname, char **reg
                 if (ret < -1) {
                     error_errno("Reading \"%s\" failed", fname);
                 }
-                tbx_itr_destroy(itr);
+                bcf_itr_destroy(itr);
             }
             bcf_destroy(rec);
         }
@@ -592,7 +592,7 @@ int main(int argc, char *argv[])
             case 1:
                 printf(
 "tabix (htslib) %s\n"
-"Copyright (C) 2021 Genome Research Ltd.\n", hts_version());
+"Copyright (C) 2022 Genome Research Ltd.\n", hts_version());
                 return EXIT_SUCCESS;
             case 2:
                 return usage(stdout, EXIT_SUCCESS);

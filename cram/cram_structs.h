@@ -289,6 +289,7 @@ struct cram_metrics {
 
     // aggregate sizes during trials
     int sz[CRAM_MAX_METHOD];
+    int input_avg_sz, input_avg_delta;
 
     // resultant method from trials
     int method, revised_method;
@@ -472,6 +473,7 @@ struct cram_container {
     uint64_t s_num_bases; // number of bases in this slice
 
     uint32_t n_mapped;    // Number of mapped reads
+    int ref_free;         // whether 'ref' is owned by us and must be freed.
 };
 
 /*
@@ -753,10 +755,10 @@ typedef struct varint_vec {
     int64_t (*varint_get64s)(char **cp, const char *endp, int *err);
 
     // Returns the number of bytes written, <= 0 on error.
-    int (*varint_put32) (char *cp, const char *endp, int32_t val_p);
-    int (*varint_put32s)(char *cp, const char *endp, int32_t val_p);
-    int (*varint_put64) (char *cp, const char *endp, int64_t val_p);
-    int (*varint_put64s)(char *cp, const char *endp, int64_t val_p);
+    int (*varint_put32) (char *cp, char *endp, int32_t val_p);
+    int (*varint_put32s)(char *cp, char *endp, int32_t val_p);
+    int (*varint_put64) (char *cp, char *endp, int64_t val_p);
+    int (*varint_put64s)(char *cp, char *endp, int64_t val_p);
 
     // Returns the number of bytes written, <= 0 on error.
     int (*varint_put32_blk) (cram_block *blk, int32_t val_p);

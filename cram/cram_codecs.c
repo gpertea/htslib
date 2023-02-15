@@ -1728,8 +1728,10 @@ cram_codec *cram_xdelta_decode_init(cram_block_compression_hdr *hdr,
     else if (option == E_BYTE_ARRAY_BLOCK) {
         option = E_BYTE_ARRAY;
         c->decode = cram_xdelta_decode_block;
-    } else
+    } else {
+        free(c);
         return NULL;
+    }
     c->free = cram_xdelta_decode_free;
     c->size = cram_xdelta_decode_size;
     c->get_block = cram_xdelta_get_block;
@@ -1899,14 +1901,14 @@ int cram_xdelta_encode_int(cram_slice *slice, cram_codec *c,
 }
 
 int cram_xdelta_encode_char(cram_slice *slice, cram_codec *c,
-                           char *in, int in_size) {
-    char *dat = malloc(in_size*5), *cp = dat, *cp_end = dat + in_size*5;
+                            char *in, int in_size) {
+    char *dat = malloc(in_size*5);
     if (!dat)
         return -1;
+    char *cp = dat, *cp_end = dat + in_size*5;
 
     c->u.e_xdelta.last = 0; // reset for each new array
-    switch(c->u.e_xdelta.word_size) {
-    case 2: {
+    if (c->u.e_xdelta.word_size == 2) {
         int i, part;
 
         part = in_size%2;
@@ -1922,9 +1924,6 @@ int cram_xdelta_encode_char(cram_slice *slice, cram_codec *c,
             c->u.e_xdelta.last = le_int2(in16[i]);
             cp += c->vv->varint_put32(cp, cp_end, zigzag16(d));
         }
-
-        break;
-    }
     }
     if (c->u.e_xdelta.sub_codec->encode(slice, c->u.e_xdelta.sub_codec,
                                       (char *)dat, cp-dat)) {
@@ -2031,10 +2030,10 @@ static int cram_xrle_decode_expand_char(cram_slice *slice, cram_codec *c) {
     int nb = var_get_u64(len_dat, len_dat+len_sz, &out_sz);
     if (!(b->data = malloc(out_sz)))
         return -1;
-    rle_decode(lit_dat, lit_sz,
-               len_dat+nb, len_sz-nb,
-               rle_syms, rle_nsyms,
-               b->data, &out_sz);
+    hts_rle_decode(lit_dat, lit_sz,
+                   len_dat+nb, len_sz-nb,
+                   rle_syms, rle_nsyms,
+                   b->data, &out_sz);
     b->uncomp_size = out_sz;
 
     return 0;
@@ -2201,10 +2200,10 @@ int cram_xrle_encode_flush(cram_codec *c) {
 
     int nb = var_put_u64(out_len, NULL, c->u.e_xrle.to_flush_size);
 
-    out_lit = rle_encode((uint8_t *)c->u.e_xrle.to_flush, c->u.e_xrle.to_flush_size,
-                         out_len+nb, &out_len_size,
-                         rle_syms, &rle_nsyms,
-                         NULL, &out_lit_size);
+    out_lit = hts_rle_encode((uint8_t *)c->u.e_xrle.to_flush, c->u.e_xrle.to_flush_size,
+                             out_len+nb, &out_len_size,
+                             rle_syms, &rle_nsyms,
+                             NULL, &out_lit_size);
     out_len_size += nb;
 
 
@@ -3070,7 +3069,7 @@ cram_codec *cram_huffman_encode_init(cram_stats *st,
                                      int version, varint_vec *vv) {
     int *vals = NULL, *freqs = NULL, *lens = NULL, code, len;
     int *new_vals, *new_freqs;
-    int i, ntot = 0, max_val = 0, min_val = INT_MAX, k;
+    int i, max_val = 0, min_val = INT_MAX, k;
     size_t nvals, vals_alloc = 0;
     cram_codec *c;
     cram_huffman_code *codes;
@@ -3096,7 +3095,6 @@ cram_codec *cram_huffman_encode_init(cram_stats *st,
         vals[nvals] = i;
         freqs[nvals] = st->freqs[i];
         assert(st->freqs[i] > 0);
-        ntot += freqs[nvals];
         if (max_val < i) max_val = i;
         if (min_val > i) min_val = i;
         nvals++;
@@ -3119,7 +3117,6 @@ cram_codec *cram_huffman_encode_init(cram_stats *st,
             vals[nvals]= kh_key(st->h, k);
             freqs[nvals] = kh_val(st->h, k);
             assert(freqs[nvals] > 0);
-            ntot += freqs[nvals];
             if (max_val < i) max_val = i;
             if (min_val > i) min_val = i;
             nvals++;
@@ -3931,6 +3928,7 @@ int cram_codec_decoder2encoder(cram_fd *fd, cram_codec *c) {
         // unify this.
         cram_codec *t = malloc(sizeof(*t));
         if (!t) return -1;
+        t->vv     = c->vv;
         t->codec = E_HUFFMAN;
         t->free = cram_huffman_encode_free;
         t->store = cram_huffman_encode_store;
@@ -4017,6 +4015,7 @@ int cram_codec_decoder2encoder(cram_fd *fd, cram_codec *c) {
         // {len,val}_{encoding,dat} are undefined, but unused.
         // Leaving them unset here means we can test that assertion.
         *c = *t;
+        free(t);
         break;
     }
 

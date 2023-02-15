@@ -2,7 +2,7 @@
 
    Copyright (c) 2008 Broad Institute / Massachusetts Institute of Technology
                  2011, 2012 Attractive Chaos <attractor@live.co.uk>
-   Copyright (C) 2009, 2013-2020 Genome Research Ltd
+   Copyright (C) 2009, 2013-2021 Genome Research Ltd
 
    Permission is hereby granted, free of charge, to any person obtaining a copy
    of this software and associated documentation files (the "Software"), to deal
@@ -491,7 +491,6 @@ fail:
 BGZF *bgzf_open(const char *path, const char *mode)
 {
     BGZF *fp = 0;
-    assert(compressBound(BGZF_BLOCK_SIZE) < BGZF_MAX_BLOCK_SIZE);
     if (strchr(mode, 'r')) {
         hFILE *fpr;
         if ((fpr = hopen(path, mode)) == 0) return 0;
@@ -514,7 +513,6 @@ BGZF *bgzf_open(const char *path, const char *mode)
 BGZF *bgzf_dopen(int fd, const char *mode)
 {
     BGZF *fp = 0;
-    assert(compressBound(BGZF_BLOCK_SIZE) < BGZF_MAX_BLOCK_SIZE);
     if (strchr(mode, 'r')) {
         hFILE *fpr;
         if ((fpr = hdopen(fd, mode)) == 0) return 0;
@@ -537,7 +535,6 @@ BGZF *bgzf_dopen(int fd, const char *mode)
 BGZF *bgzf_hopen(hFILE *hfp, const char *mode)
 {
     BGZF *fp = NULL;
-    assert(compressBound(BGZF_BLOCK_SIZE) < BGZF_MAX_BLOCK_SIZE);
     if (strchr(mode, 'r')) {
         fp = bgzf_read_init(hfp, NULL);
         if (fp == NULL) return NULL;
@@ -577,6 +574,8 @@ int bgzf_compress(void *_dst, size_t *dlen, const void *src, size_t slen, int le
     } else {
         level = level > 0 ? level : 6; // libdeflate doesn't honour -1 as default
         // NB levels go up to 12 here.
+        int lvl_map[] = {0,1,2,3,5,6,7,8,10,12};
+        level = lvl_map[level>9 ?9 :level];
         struct libdeflate_compressor *z = libdeflate_alloc_compressor(level);
         if (!z) return -1;
 
@@ -617,6 +616,7 @@ int bgzf_compress(void *_dst, size_t *dlen, const void *src, size_t slen, int le
     uint8_t *dst = (uint8_t*)_dst;
 
     if (level == 0) {
+    uncomp:
         // Uncompressed data
         if (*dlen < slen+5 + BLOCK_HEADER_LENGTH + BLOCK_FOOTER_LENGTH) return -1;
         dst[BLOCK_HEADER_LENGTH] = 1; // BFINAL=1, BTYPE=00; see RFC1951
@@ -638,8 +638,20 @@ int bgzf_compress(void *_dst, size_t *dlen, const void *src, size_t slen, int le
             return -1;
         }
         if ((ret = deflate(&zs, Z_FINISH)) != Z_STREAM_END) {
-            hts_log_error("Deflate operation failed: %s", bgzf_zerr(ret, ret == Z_DATA_ERROR ? &zs : NULL));
+            if (ret == Z_OK && zs.avail_out == 0) {
+                deflateEnd(&zs);
+                goto uncomp;
+            } else {
+                hts_log_error("Deflate operation failed: %s", bgzf_zerr(ret, ret == Z_DATA_ERROR ? &zs : NULL));
+            }
             return -1;
+        }
+        // If we used up the entire output buffer, then we either ran out of
+        // room or we *just* fitted, but either way we may as well store
+        // uncompressed for faster decode.
+        if (zs.avail_out == 0) {
+            deflateEnd(&zs);
+            goto uncomp;
         }
         if ((ret = deflateEnd(&zs)) != Z_OK) {
             hts_log_error("Call to deflateEnd failed: %s", bgzf_zerr(ret, NULL));
@@ -1012,7 +1024,7 @@ int bgzf_read_block(BGZF *fp)
         if (j->hit_eof) {
             if (!fp->last_block_eof && !fp->no_eof_block) {
                 fp->no_eof_block = 1;
-                hts_log_warning("EOF marker is absent. The input is probably truncated");
+                hts_log_warning("EOF marker is absent. The input may be truncated");
             }
             fp->mt->hit_eof = 1;
         }
@@ -1114,7 +1126,7 @@ int bgzf_read_block(BGZF *fp)
         if (count == 0) { // no data read
             if (!fp->last_block_eof && !fp->no_eof_block && !fp->is_gzip) {
                 fp->no_eof_block = 1;
-                hts_log_warning("EOF marker is absent. The input is probably truncated");
+                hts_log_warning("EOF marker is absent. The input may be truncated");
             }
             fp->block_length = 0;
             return 0;
@@ -1457,7 +1469,7 @@ static void *bgzf_mt_writer(void *vp) {
 int bgzf_mt_read_block(BGZF *fp, bgzf_job *j)
 {
     uint8_t header[BLOCK_HEADER_LENGTH], *compressed_block;
-    int count, size = 0, block_length, remaining;
+    int count, block_length, remaining;
 
     // NOTE: Guaranteed to be compressed as we block multi-threading in
     // uncompressed mode.  However it may be gzip compression instead
@@ -1486,7 +1498,6 @@ int bgzf_mt_read_block(BGZF *fp, bgzf_job *j)
     if (count != sizeof(header)) // no data read
         return -1;
 
-    size = count;
     block_length = unpackInt16((uint8_t*)&header[16]) + 1; // +1 because when writing this number, we used "-1"
     if (block_length < BLOCK_HEADER_LENGTH) {
         j->errcode |= BGZF_ERR_HEADER;
@@ -1500,7 +1511,6 @@ int bgzf_mt_read_block(BGZF *fp, bgzf_job *j)
         j->errcode |= BGZF_ERR_IO;
         return -1;
     }
-    size += count;
     j->comp_len = block_length;
     j->uncomp_len = BGZF_MAX_BLOCK_SIZE;
     j->block_address = block_address;
