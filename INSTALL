@@ -110,6 +110,7 @@ The 'make install' command installs the libraries, library header files,
 utilities, several manual pages, and a pkgconfig file to /usr/local.
 The installation location can be changed by configuring with --prefix=DIR
 or via 'make prefix=DIR install' (see Installation Locations below).
+Shared library permissions can be set via e.g. 'make install LIB_PERM=755'.
 
 
 Configuration
@@ -127,6 +128,9 @@ various features and specify further optional external requirements:
     from their library dependencies.  By default (or with --disable-plugins),
     any enabled pluggable facilities (such as libcurl file access) are built
     directly within HTSlib.
+
+    Programs that are statically linked to a libhts.a with plugins enabled
+    need to be linked using -rdynamic or a similar linker option.
 
     The <https://github.com/samtools/htslib-plugins> repository contains
     several additional plugins, including the iRODS (<http://irods.org/>)
@@ -265,7 +269,9 @@ Alpine Linux
 ------------
 
 doas apk update  # Ensure the package list is up to date
-doas apk add autoconf automake make gcc musl-dev perl bash zlib-dev bzip2-dev xz-dev curl-dev libressl-dev
+doas apk add autoconf automake make gcc musl-dev perl bash zlib-dev bzip2-dev xz-dev curl-dev openssl-dev
+
+Note: some older Alpine versions use libressl-dev rather than openssl-dev.
 
 OpenSUSE
 --------
@@ -291,3 +297,13 @@ mingw-w64-x86_64-xz mingw-w64-x86_64-curl mingw-w64-x86_64-autotools
 mingw-w64-x86_64-tools-git
 
 (The last is only needed for building libraries compatible with MSVC.)
+
+HP-UX
+-----
+
+HP-UX requires that shared libraries have execute permission.  The
+default for HTSlib is to install with permission 644 (read-write for
+owner and read-only for group / other). This can be overridden by
+setting the LIB_PERM variable at install time with:
+
+    make install LIB_PERM=755
