@@ -21,7 +21,8 @@ mkdir -p $libdir
 if [[ ! -d libdeflate ]]; then
  git clone https://github.com/ebiggers/libdeflate
  cd libdeflate
- git checkout '9b565afd996d8b798fc7b94cddcc7cfa49293050'
+ #git checkout '9b565afd996d8b798fc7b94cddcc7cfa49293050'
+ git checkout 7805198 # release v1.23
  cd ..
 fi
 if [[ ! -f $libdir/libdeflate.a ]]; then
@@ -32,22 +33,22 @@ if [[ ! -f $libdir/libdeflate.a ]]; then
    MINGW=1
    libdeflate=libdeflatestatic.lib
   fi
-  make -j 2 $libdeflate || exit 1
+  make -f ../Makefile.libdeflate -j 4 $libdeflate || exit 1
   cp $libdeflate $libdir/libdeflate.a
   cp libdeflate.h $incdir/
   cd ..
 fi
 
-
 bzip="bzip2-1.0.8"
 if [[ ! -d bzip2 ]]; then
-  curl -sLO https://sourceware.org/pub/bzip2/$bzip.tar.gz
-  tar -xzf $bzip.tar.gz
+  curl -ksLO https://sourceware.org/pub/bzip2/$bzip.tar.gz || \
+    exec echo "Error: failed to fetch $bzip.tar.gz!"
+  tar -xzf $bzip.tar.gz || exec echo "Error: failed to unpack $bzip.tar.gz!"
   /bin/rm -f $bzip.tar.gz
-  mv $bzip bzip2 
+  mv $bzip bzip2
 fi
 if [[ ! -f $libdir/libbz2.a ]]; then 
-  cd bzip2 
+  cd bzip2
   make -j 4 libbz2.a
   cp bzlib.h $incdir/
   cp libbz2.a $libdir/
@@ -55,12 +56,13 @@ if [[ ! -f $libdir/libbz2.a ]]; then
 fi
 
 # -- prepare liblzma
-xz="xz-5.2.5"
-
+xzver="5.4.7"
+xz="xz-$xzver"
+xzurl="https://github.com/tukaani-project/xz/releases/download/v$xzver/$xz.tar.gz"
 if [[ ! -d lzma ]]; then
-  curl -sLO https://tukaani.org/xz/$xz.tar.gz
-  tar -xzf $xz.tar.gz
-  /bin/rm -f $xz.tar.gz
+  curl -ksLO "$xzurl" || exec echo "Error: failed to fetch: $xzurl!"
+  tar -xzf $xz.tar.gz || exec echo "Error: failed to unpack $xz.tar.gz !"
+  unlink $xz.tar.gz
   mv $xz lzma
 fi
 if [[ ! -f $libdir/liblzma.a ]]; then
