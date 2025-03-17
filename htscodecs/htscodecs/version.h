@@ -1,1 +1,0 @@
-#define HTSCODECS_VERSION_TEXT "1.4.0-g357bc5e4-dirty"
