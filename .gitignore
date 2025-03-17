@@ -9,7 +9,7 @@
 *-uninstalled.pc
 config_vars.h
 /version.h
-
+test
 autom4te.cache
 config.cache
 config.guess
